@@ -2,6 +2,8 @@
 
 A privacy-focused Android dashboard that shows you what permissions your apps have and how you're using them.
 
+**Note:** This is an independent privacy tool. Your data never leaves your device.
+
 ## Early Beta
 
 This is a working prototype. Expect rough edges!
@@ -67,5 +69,5 @@ MIT License - see LICENSE file
 
 ---
 
-**Note:** This is an independent privacy tool. Your data never leaves your device.
+
 
