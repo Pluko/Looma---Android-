@@ -70,6 +70,8 @@ import androidx.core.content.getSystemService
 import androidx.core.graphics.drawable.toBitmap
 import com.yourlooma.vault.ui.theme.LoomaTheme
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 
 enum class LoomaTab { Home, Usage, Permissions }
@@ -251,7 +253,7 @@ class MainActivity : ComponentActivity() {
                 loading = true
                 Thread {
                     val perms = loadAppPermissionSummaries(ctx)
-                    val usage = fetchTopUsage(context = ctx, limit = 3)
+                    val usage = fetchTopUsage(context = ctx)
 
                     (ctx as ComponentActivity).runOnUiThread {
                         permSummaries = perms
@@ -264,7 +266,6 @@ class MainActivity : ComponentActivity() {
                              "Dashboard refreshed",
                              Toast.LENGTH_SHORT
                         ).show()
-                        refresh()
                     }
                 }.start()
             }
@@ -331,8 +332,10 @@ class MainActivity : ComponentActivity() {
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
-                    IconButton(onClick = { doRefresh() }) {
+                    IconButton(
+                        onClick = { doRefresh() },
                         enabled = !loading
+                    ) {
                         Icon(
                             imageVector = Icons.Rounded.Refresh,
                             contentDescription = "Refresh dashboard",
