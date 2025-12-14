@@ -326,6 +326,23 @@ class MainActivity : ComponentActivity() {
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.SemiBold
                         )
+                        // Last scanned timestamp
+                        if (lastScan != null) {
+                            val timeAgo = remember(lastScan) {
+                                val diff = System.currentTimeMillis() - lastScan!!
+                                val minutes = diff / 60000
+                                when {
+                                    minutes < 1 -> "Just now"
+                                    minutes < 60 -> "${minutes}m ago"
+                                    else -> "${minutes / 60}h ago"
+                                }
+                            }
+                            Text(
+                                text = "Last scanned: $timeAgo",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                            )
+                        }
                     }
                     Text(
                         text = "$camCount camera • $micCount mic • $locCount location • $conCount contacts",
@@ -581,12 +598,39 @@ fun UsageAccessScreen() {
             return@Column
         }
 
-        // If loading, show a simple indicator
+        // If loading, show a spinner
         if (loading) {
-            Text("Loading usage...", style = MaterialTheme.typography.bodyMedium)
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(24.dp),
+                    strokeWidth = 2.dp
+                )
+                Spacer(Modifier.width(12.dp))
+                Text("Loading usage...", style = MaterialTheme.typography.bodyMedium)
+            }
         } else {
             if (usageList.isEmpty()) {
-                Text("No app usage found in the last 24 hours.", style = MaterialTheme.typography.bodySmall)
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        "No app usage yet",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        "Use your phone normally and check back in a few hours to see your app usage stats.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        textAlign = TextAlign.Center
+                    )
+                }
             } else {
                 // Show only apps that have usage (fetchTopUsage already filters zeros)
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -684,7 +728,23 @@ fun PermissionsScreen() {
                         loading = false
                     }
                 }.start()
-            }) { Text(if (loading) "Scanning..." else "Scan permissions") }
+            }) {
+                if (loading) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                        Text("Scanning...")
+                    }
+                } else {
+                    Text("Scan permissions")
+                }
+            }
 
             if (apps.isNotEmpty()) {
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -729,7 +789,23 @@ fun PermissionsScreen() {
                     }
                 }
             } else if (!loading) {
-                Text("Tap “Scan permissions” to list apps with granted permissions.")
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        "Ready to scan",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                    Text(
+                        "Tap 'Scan permissions' above to see which apps have access to your camera, microphone, location, and other sensitive data.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
         }
     }
