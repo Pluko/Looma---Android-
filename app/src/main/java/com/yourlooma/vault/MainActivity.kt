@@ -37,6 +37,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.*
 import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
@@ -371,8 +372,15 @@ class MainActivity : ComponentActivity() {
                     val usageText = if (topUsage.isEmpty()) {
                         "No recent usage yet."
                     } else {
-                        topUsage.joinToString(" • ") { (pkg, minutes) ->
-                            "$pkg ${minutes}m"
+                        topUsage.take(3).joinToString(" • ") { (pkg, minutes) ->
+                            val label = try {
+                                val pm = ctx.packageManager
+                                val info = pm.getApplicationInfo(pkg, 0)
+                                pm.getApplicationLabel(info).toString()
+                            } catch (_: Exception) {
+                                pkg // fallback to package name
+                            }
+                            "$label ${minutes}m"
                         }
                     }
 
@@ -604,7 +612,7 @@ fun UsageAccessScreen() {
                             Text(text = label, style = MaterialTheme.typography.bodyLarge)
                             Text(text = "${mins}m", style = MaterialTheme.typography.bodyMedium)
                         }
-                        Divider()
+                        HorizontalDivider()
                     }
                 }
             }
