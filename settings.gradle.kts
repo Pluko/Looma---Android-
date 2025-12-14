@@ -12,5 +12,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "LoomaMVP"
+rootProject.name = "LoomaBeta"
 include(":app")
