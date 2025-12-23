@@ -40,11 +40,13 @@ import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Button
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
@@ -73,6 +75,8 @@ import com.yourlooma.vault.ui.theme.LoomaTheme
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
 
 
 enum class LoomaTab { Home, Usage, Permissions }
@@ -553,26 +557,33 @@ private fun fetchTopUsage(context: Context): List<Pair<String, Long>> {
 
 
 /* -------------------------- Usage tab -------------------------- */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun UsageAccessScreen() {
     val ctx = LocalContext.current
     var usageList by remember { mutableStateOf<List<Pair<String, Long>>>(emptyList()) }
     var hasAccess by remember { mutableStateOf(hasUsageAccess(ctx)) } // your existing helper
-    var loading by remember { mutableStateOf(false) }
+    var isRefreshing by remember { mutableStateOf(false) }
 
-    // Load usage once when screen appears (background thread -> UI update)
-    LaunchedEffect(key1 = hasAccess) {
+    // Refresh function
+    val refreshUsage: suspend () -> Unit = {
         if (hasAccess) {
-            loading = true
-            // keep same style as other code: run blocking work off main thread
+            isRefreshing = true
             withContext(Dispatchers.IO) {
                 val fetched = fetchTopUsage(ctx)
                 // Post result on UI thread
                 (ctx as? ComponentActivity)?.runOnUiThread {
                     usageList = fetched
-                    loading = false
+                    isRefreshing = false
                 }
             }
+        }
+    }
+
+    // Load usage once when screen appears (background thread -> UI update)
+    LaunchedEffect(key1 = hasAccess) {
+        if (hasAccess && usageList.isEmpty()) {
+            refreshUsage()
         }
     }
 
@@ -601,22 +612,17 @@ fun UsageAccessScreen() {
             return@Column
         }
 
-        // If loading, show a spinner
-        if (loading) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(24.dp),
-                    strokeWidth = 2.dp
-                )
-                Spacer(Modifier.width(12.dp))
-                Text("Loading usage...", style = MaterialTheme.typography.bodyMedium)
-            }
-        } else {
-            if (usageList.isEmpty()) {
+        // Pull-to-refresh wrapper
+        PullToRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = {
+                kotlinx.coroutines.MainScope().launch {
+                    refreshUsage()
+                }
+            },
+            modifier = Modifier.fillMaxSize()
+        ) {
+            if (usageList.isEmpty() && !isRefreshing) {
                 Column(
                     modifier = Modifier.fillMaxWidth().padding(32.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -636,7 +642,10 @@ fun UsageAccessScreen() {
                 }
             } else {
                 // Show only apps that have usage (fetchTopUsage already filters zeros)
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxSize()
+                ) {
                     items(usageList) { (pkg, mins) ->
                         // You probably have a helper to resolve package name -> app label/icon.
                         // Use packageManager if you want label/icon here. Minimal example:
