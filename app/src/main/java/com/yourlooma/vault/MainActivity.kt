@@ -230,10 +230,13 @@ class MainActivity : ComponentActivity() {
         }
 
         // Aggregates for the chips
-        val camCount = permSummaries.count { "Camera" in it.granted }
-        val micCount = permSummaries.count { "Microphone" in it.granted }
-        val locCount = permSummaries.count { "Location" in it.granted }
-        val conCount = permSummaries.count { "Contacts" in it.granted}
+        val camCount = permSummaries.count { "android.permission.CAMERA" in it.granted }
+        val micCount = permSummaries.count { "android.permission.RECORD_AUDIO" in it.granted }
+        val locCount = permSummaries.count {
+            "android.permission.ACCESS_FINE_LOCATION" in it.granted ||
+            "android.permission.ACCESS_COARSE_LOCATION" in it.granted
+        }
+        val conCount = permSummaries.count { "android.permission.READ_CONTACTS" in it.granted }
 
         // Very simple “score” for now
         val privacyScore = remember(permSummaries) {
